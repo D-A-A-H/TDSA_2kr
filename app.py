@@ -8,14 +8,12 @@ import time
 from datetime import datetime, timezone
 from models import UserCreate, LoginRequest, ProfileResponse
 
-# ---------- Инициализация приложения ----------
 app = FastAPI(title="Server Technologies Control Work #2")
 
-# Секретный ключ для подписи (в реальном проекте хранить в .env)
 SECRET_KEY = "my-super-secret-key-for-session-signing-2025"
 serializer = URLSafeTimedSerializer(SECRET_KEY)
 
-# ---------- Тестовые данные для заданий 3.2, 5.1, 5.2, 5.3 ----------
+# Тестовые данные для заданий 3.2, 5.1, 5.2, 5.3 
 sample_products = [
     {"product_id": 123, "name": "Smartphone", "category": "Electronics", "price": 599.99},
     {"product_id": 456, "name": "Phone Case", "category": "Accessories", "price": 19.99},
@@ -24,23 +22,20 @@ sample_products = [
     {"product_id": 202, "name": "Smartwatch", "category": "Electronics", "price": 299.99},
 ]
 
-# Хранилище валидных пользователей (для аутентификации)
-# В реальном приложении — база данных
-VALID_USERS = {
+USERS = {
     "user123": {"password": "password123", "user_id": str(uuid.uuid4())},
     "alice": {"password": "alicepass", "user_id": str(uuid.uuid4())},
 }
 
-# ---------- Задание 3.1: POST /create_user ----------
+# Задание 3.1: POST /create_user 
 @app.post("/create_user", response_model=UserCreate)
 async def create_user(user: UserCreate):
     """
     Принимает данные пользователя, валидирует их и возвращает те же данные.
     """
-    # Pydantic автоматически выполнит валидацию (EmailStr, age>=1)
     return user
 
-# ---------- Задание 3.2: GET /product/{product_id} и GET /products/search ----------
+# Задание 3.2: GET /product/{product_id} и GET /products/search 
 @app.get("/product/{product_id}")
 async def get_product(product_id: int):
     """
@@ -69,7 +64,6 @@ async def search_products(
                 results.append(product)
     return results[:limit]
 
-# ---------- Задание 5.1: Простая cookie-аутентификация ----------
 @app.post("/login-simple")
 async def login_simple(request: Request):
     """
@@ -94,7 +88,7 @@ async def login_simple(request: Request):
         value=session_token,
         httponly=True,
         max_age=300,
-        secure=False  # Для тестирования (без HTTPS)
+        secure=False  
     )
     return response
 
@@ -107,11 +101,8 @@ async def get_user_profile(session_token: Optional[str] = Cookie(None)):
     """
     if not session_token:
         raise HTTPException(status_code=401, detail={"message": "Unauthorized"})
-    # В реальном приложении нужно хранить и проверять токены
-    # Здесь для простоты считаем любой непустой токен валидным
     return {"user_id": "user123", "username": "user123", "message": "Profile data"}
 
-# ---------- Задание 5.2: Подписанная cookie (itsdangerous) ----------
 @app.post("/login")
 async def login_signed(request: Request, response: Response):
     """
@@ -130,7 +121,7 @@ async def login_signed(request: Request, response: Response):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
     user_id = VALID_USERS[username]["user_id"]
-    # Подписываем user_id
+    
     signed_token = serializer.dumps(user_id)
     
     response.set_cookie(
@@ -157,8 +148,7 @@ async def get_profile_signed(session_token: Optional[str] = Cookie(None)):
         raise HTTPException(status_code=401, detail={"message": "Session expired"})
     except BadSignature:
         raise HTTPException(status_code=401, detail={"message": "Invalid session"})
-    
-    # Находим username по user_id
+        
     username = None
     for name, data in VALID_USERS.items():
         if data["user_id"] == user_id:
